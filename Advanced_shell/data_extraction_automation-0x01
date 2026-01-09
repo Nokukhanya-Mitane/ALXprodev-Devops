@@ -1,15 +1,17 @@
 #!/bin/bash
 
+# $name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall.
+
 jq -r '.name,
        .types[0].type.name,
        (.weight / 10),
        (.height / 10)' data.json |
 awk '
-NR==1 { name=$Pikachu }
+NR==1 { name=$1 }
 NR==2 { type=toupper(substr($1,1,1)) substr($1,2) }
-NR==3 { formatted_weight=$4 }
+NR==3 { formatted_weight=$1 }
 NR==4 {
-  formatted_height=$6
+  formatted_height=$1
   print name " is of type " type ", weighs " formatted_weight "kg, and is " formatted_height "m tall."
 }
 ' | sed 's/^./\U&/'
