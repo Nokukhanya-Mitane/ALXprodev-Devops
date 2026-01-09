@@ -1,23 +1,37 @@
 #!/bin/bash
 
-# Script to fetch multiple Pokémon data and store them separately
-
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 API_URL="https://pokeapi.co/api/v2/pokemon"
-OUTPUT_DIR="pokemon_data"
+OUT_DIR="pokemon_data"
+ERROR_LOG="errors.txt"
 
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "$OUT_DIR"
+> "$ERROR_LOG"
 
 for pokemon in "${POKEMONS[@]}"
 do
     echo "Fetching data for $pokemon..."
-    curl -s "$API_URL/$pokemon" -o "$OUTPUT_DIR/$pokemon.json"
+    success=false
 
-    if [ -s "$OUTPUT_DIR/$pokemon.json" ]; then
-        echo "Saved data to pokemon_data/$pokemon.json ✅"
-    else
-        echo "Failed to fetch data for $pokemon ❌" >> errors.txt
+    for attempt in 1 2 3
+    do
+        response=$(curl -s -w "%{http_code}" "$API_URL/$pokemon")
+        status_code=$(echo "$response" | tail -c 4)
+        body=$(echo "$response" | sed '$d')
+
+        if [ "$status_code" = "200" ]; then
+            echo "$body" > "$OUT_DIR/$pokemon.json"
+            echo "Saved data to $OUT_DIR/$pokemon.json ✅"
+            success=true
+            break
+        else
+            echo "Attempt $attempt failed for $pokemon"
+            sleep 1
+        fi
+    done
+
+    if [ "$success" = false ]; then
+        echo "Failed to fetch $pokemon after 3 attempts" >> "$ERROR_LOG"
+        echo "Skipping $pokemon ❌"
     fi
-
-    sleep 2
 done
