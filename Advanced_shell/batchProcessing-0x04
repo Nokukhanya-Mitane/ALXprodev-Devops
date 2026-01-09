@@ -13,11 +13,19 @@ fetch_pokemon() {
     echo "Saved data to $OUT_DIR/$pokemon.json ✅"
 }
 
+# Fetch Pokémon data in parallel
 for pokemon in "${POKEMONS[@]}"
 do
     fetch_pokemon "$pokemon" &
 done
 
+# List background jobs 
+jobs
+
+# Wait for all background processes
 wait
+
+# Safety cleanup 
+kill $(jobs -p) 2>/dev/null
 
 echo "All Pokémon data fetched successfully 🎉"
